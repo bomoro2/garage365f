@@ -1,0 +1,40 @@
+enum IntakeState {
+  ingresado,
+  diagnostico,
+  aprobacion,
+  enProceso,
+  esperaRepuestos,
+  pruebas,
+  listo,
+  entregado,
+  cerrado,
+}
+
+class WorkIntake {
+  final String id;
+  final String assetId;
+  final IntakeState state;
+  final String reason;
+  final String priority; // "ALTA", "MEDIA", "BAJA"
+
+  const WorkIntake({
+    required this.id,
+    required this.assetId,
+    required this.state,
+    required this.reason,
+    required this.priority,
+  });
+
+  factory WorkIntake.fromJson(Map<String, dynamic> j) => WorkIntake(
+    id: j['id'],
+    assetId: j['assetId'],
+    state: IntakeState.values.firstWhere(
+      (e) =>
+          e.name.toLowerCase() ==
+          (j['state'] as String).toString().toLowerCase(),
+      orElse: () => IntakeState.ingresado,
+    ),
+    reason: j['reason'] ?? '',
+    priority: j['priority'] ?? 'MEDIA',
+  );
+}

@@ -1,0 +1,4 @@
+[
+  {"id":"wi1","assetId":"a1","state":"enProceso","reason":"Fuga hidráulica","priority":"ALTA"},
+  {"id":"wi2","assetId":"a2","state":"diagnostico","reason":"No arranca","priority":"MEDIA"}
+]

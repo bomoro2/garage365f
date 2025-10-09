@@ -1,0 +1,4 @@
+[
+  {"id":"a1","code":"GRP07-001","type":"Generador","brand":"Cummins","model":"QSB6.7","hourmeter":4218},
+  {"id":"a2","code":"HT-012","type":"Torre","brand":"Atlas Copco","model":"QLT H50","hourmeter":983}
+]
