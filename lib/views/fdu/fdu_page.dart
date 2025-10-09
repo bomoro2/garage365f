@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/asset_list_provider.dart';
 import '../../state/intake_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class FduPage extends ConsumerWidget {
   final String assetId;
@@ -34,11 +35,11 @@ class FduPage extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             FilledButton.icon(
-              onPressed: () =>
-                  Navigator.of(context).pushNamed('/qr/preview/$assetId'),
+              onPressed: () => context.push('/qr/preview/$assetId'),
               icon: const Icon(Icons.qr_code_2),
               label: const Text('Ver QR del equipo'),
             ),
+
             const SizedBox(height: 8),
             intakeAsync.when(
               data: (i) {
