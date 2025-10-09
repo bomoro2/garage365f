@@ -10,7 +10,17 @@ class ScanPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assets = ref.watch(assetListProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Garage365 · Equipos')),
+      appBar: AppBar(
+        title: const Text('Garage365 · Equipos'),
+        actions: [
+          IconButton(
+            tooltip: 'Nuevo equipo',
+            onPressed: () => context.push('/assets/new'),
+            icon: const Icon(Icons.add_box_outlined),
+          ),
+        ],
+      ),
+
       body: assets.when(
         data: (list) => ListView.separated(
           itemCount: list.length,
@@ -21,7 +31,7 @@ class ScanPage extends ConsumerWidget {
               title: Text('${a.code} · ${a.type}'),
               subtitle: Text('${a.brand} ${a.model} · ${a.hourmeter} h'),
               trailing: const Icon(Icons.qr_code_2),
-              onTap: () => context.go('/fdu/${a.id}'),
+              onTap: () => context.push('/fdu/${a.id}'),
             );
           },
         ),
@@ -29,7 +39,7 @@ class ScanPage extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/qr/scan'),
+        onPressed: () => context.push('/qr/scan'),
         label: const Text('Escanear QR'),
         icon: const Icon(Icons.camera_alt_outlined),
       ),

@@ -6,6 +6,8 @@ import 'views/qr/qr_scan_page.dart';
 import 'views/qr/qr_preview_page.dart';
 import 'state/asset_list_provider.dart'; // para resolver assetCode en preview
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'views/asset/create_asset_page.dart';
+import 'views/intake/create_intake_page.dart';
 
 final router = GoRouter(
   routes: [
@@ -18,6 +20,12 @@ final router = GoRouter(
       },
     ),
     GoRoute(path: '/qr/scan', builder: (ctx, st) => const QrScanPage()),
+    GoRoute(path: '/assets/new', builder: (ctx, st) => const CreateAssetPage()),
+    GoRoute(
+      path: '/intake/new/:assetId',
+      builder: (ctx, st) =>
+          CreateIntakePage(assetId: st.pathParameters['assetId']!),
+    ),
     // /qr/preview/:assetId → buscamos el asset para mostrar su code
     GoRoute(
       path: '/qr/preview/:assetId',
