@@ -29,12 +29,7 @@ class ScanPage extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // acá más adelante: abrir cámara y leer QR → navegar a FDU
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Simulación de scan pendiente')),
-          );
-        },
+        onPressed: () => context.go('/qr/scan'),
         label: const Text('Escanear QR'),
         icon: const Icon(Icons.camera_alt_outlined),
       ),

@@ -33,6 +33,13 @@ class FduPage extends ConsumerWidget {
               error: (e, _) => Text('Error asset: $e'),
             ),
             const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () =>
+                  Navigator.of(context).pushNamed('/qr/preview/$assetId'),
+              icon: const Icon(Icons.qr_code_2),
+              label: const Text('Ver QR del equipo'),
+            ),
+            const SizedBox(height: 8),
             intakeAsync.when(
               data: (i) {
                 if (i == null) {
