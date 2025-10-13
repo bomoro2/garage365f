@@ -49,4 +49,20 @@ class WorkIntake {
     'priority': priority,
     'createdAt': createdAt.toIso8601String(),
   };
+
+  WorkIntake copyWith({
+    String? id,
+    String? assetId,
+    IntakeState? state,
+    String? reason,
+    String? priority,
+    DateTime? createdAt,
+  }) => WorkIntake(
+    id: id ?? this.id,
+    assetId: assetId ?? this.assetId,
+    state: state ?? this.state,
+    reason: reason ?? this.reason,
+    priority: priority ?? this.priority,
+    createdAt: createdAt ?? this.createdAt,
+  );
 }

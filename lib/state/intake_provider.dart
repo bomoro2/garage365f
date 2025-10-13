@@ -11,21 +11,21 @@ final intakeListProvider = FutureProvider<List<WorkIntake>>((ref) async {
   return repo.loadAll();
 });
 
+/// Último ingreso ACTIVO (no cerrado), por fecha desc
 final activeIntakeByAssetProvider = FutureProvider.family<WorkIntake?, String>((
   ref,
   assetId,
 ) async {
   final list = await ref.watch(intakeListProvider.future);
-  try {
-    return list.lastWhere(
-      (i) => i.assetId == assetId && i.state != IntakeState.cerrado,
-    );
-  } catch (_) {
-    return null;
-  }
+  final filtered =
+      list
+          .where((i) => i.assetId == assetId && i.state != IntakeState.cerrado)
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  return filtered.isEmpty ? null : filtered.first;
 });
 
-/// Historial completo para el asset (incluye cerrados), ordenado por fecha descendente
+/// Historial completo (incluye cerrados), por fecha desc
 final intakeHistoryByAssetProvider =
     FutureProvider.family<List<WorkIntake>, String>((ref, assetId) async {
       final list = await ref.watch(intakeListProvider.future);
@@ -34,6 +34,28 @@ final intakeHistoryByAssetProvider =
       return filtered;
     });
 
+/// Acción: actualizar estado
+final updateIntakeStateProvider =
+    Provider<
+      Future<void> Function({
+        required String intakeId,
+        required String assetId,
+        required IntakeState newState,
+      })
+    >((ref) {
+      return ({
+        required String intakeId,
+        required String assetId,
+        required IntakeState newState,
+      }) async {
+        final repo = ref.read(intakeRepoProvider);
+        await repo.updateState(intakeId: intakeId, newState: newState);
+        // refrescos
+        ref.invalidate(intakeListProvider);
+        ref.invalidate(activeIntakeByAssetProvider(assetId));
+        ref.invalidate(intakeHistoryByAssetProvider(assetId));
+      };
+    });
 // acción crear ingreso
 final createIntakeProvider = Provider<Future<void> Function(WorkIntake)>((ref) {
   return (WorkIntake i) async {

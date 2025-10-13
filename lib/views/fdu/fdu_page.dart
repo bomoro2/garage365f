@@ -14,9 +14,7 @@ class FduPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assetAsync = ref.watch(assetListProvider);
     final activeAsync = ref.watch(activeIntakeByAssetProvider(assetId));
-    final historyAsync = ref.watch(
-      intakeHistoryByAssetProvider(assetId),
-    ); // <- HISTORIAL
+    final historyAsync = ref.watch(intakeHistoryByAssetProvider(assetId));
 
     return Scaffold(
       appBar: AppBar(title: const Text('FDU · Ingreso')),
@@ -67,7 +65,7 @@ class FduPage extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
 
-          // --- Ingreso activo ---
+          // --- Ingreso activo (con selector de estado) ---
           activeAsync.when(
             data: (i) {
               if (i == null) {
@@ -85,15 +83,76 @@ class FduPage extends ConsumerWidget {
                 );
               }
               return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.assignment_turned_in_outlined),
-                  title: Text('Estado: ${i.state.name.toUpperCase()}'),
-                  subtitle: Text(
-                    'Motivo: ${i.reason}\nPrioridad: ${i.priority}',
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
                   ),
-                  trailing: Text(
-                    _fmt(i.createdAt),
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.assignment_turned_in_outlined),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Estado: ',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                DropdownButton<IntakeState>(
+                                  value: i.state,
+                                  items: IntakeState.values.map((s) {
+                                    return DropdownMenuItem(
+                                      value: s,
+                                      child: Text(_stateLabel(s)),
+                                    );
+                                  }).toList(),
+                                  onChanged: (newS) async {
+                                    if (newS == null) return;
+                                    final update = ref.read(
+                                      updateIntakeStateProvider,
+                                    );
+                                    await update(
+                                      intakeId: i.id,
+                                      assetId: assetId,
+                                      newState: newS,
+                                    );
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Estado actualizado a ${_stateLabel(newS)}',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Motivo: ${i.reason}\nPrioridad: ${i.priority}',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _fmt(i.createdAt),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -115,7 +174,6 @@ class FduPage extends ConsumerWidget {
               if (items.isEmpty) {
                 return const Text('No hay ingresos registrados.');
               }
-              // Orden ya viene del provider por createdAt desc; por si acaso:
               final sorted = [...items]
                 ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
               return ListView.separated(
@@ -133,33 +191,18 @@ class FduPage extends ConsumerWidget {
                           ? Icons.playlist_add_check
                           : Icons.archive_outlined,
                     ),
-                    title: Text(
-                      '${it.state.name.toUpperCase()} · ${it.priority}',
-                    ),
+                    title: Text('${_stateLabel(it.state)} · ${it.priority}'),
                     subtitle: Text(it.reason),
                     trailing: Text(
                       _fmt(it.createdAt),
                       style: const TextStyle(fontSize: 12),
                     ),
-                    // TODO: onTap → abrir detalle del ingreso cuando lo implementemos
                   );
                 },
               );
             },
             loading: () => const LinearProgressIndicator(),
             error: (e, _) => Text('Error historial: $e'),
-          ),
-
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: () {
-              // Próximos módulos (diagnóstico, tareas, repuestos):
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Módulos en construcción')),
-              );
-            },
-            icon: const Icon(Icons.playlist_add_check),
-            label: const Text('Abrir módulos (Diagnóstico, Tareas, Repuestos)'),
           ),
         ],
       ),
@@ -168,10 +211,30 @@ class FduPage extends ConsumerWidget {
 }
 
 // --- helpers ---
-
-String _fmt(DateTime dt) {
-  // dd/MM HH:mm (simple; si preferís, usa intl)
-  return '${_2(dt.day)}/${_2(dt.month)} ${_2(dt.hour)}:${_2(dt.minute)}';
-}
+String _fmt(DateTime dt) =>
+    '${_2(dt.day)}/${_2(dt.month)} ${_2(dt.hour)}:${_2(dt.minute)}';
 
 String _2(int v) => v.toString().padLeft(2, '0');
+
+String _stateLabel(IntakeState s) {
+  switch (s) {
+    case IntakeState.ingresado:
+      return 'INGRESADO';
+    case IntakeState.diagnostico:
+      return 'DIAGNÓSTICO';
+    case IntakeState.aprobacion:
+      return 'APROBACIÓN';
+    case IntakeState.enProceso:
+      return 'EN PROCESO';
+    case IntakeState.esperaRepuestos:
+      return 'ESPERA REPUESTOS';
+    case IntakeState.pruebas:
+      return 'PRUEBAS';
+    case IntakeState.listo:
+      return 'LISTO';
+    case IntakeState.entregado:
+      return 'ENTREGADO';
+    case IntakeState.cerrado:
+      return 'CERRADO';
+  }
+}

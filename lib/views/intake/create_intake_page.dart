@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../state/intake_provider.dart';
 import '../../data/models/work_intake.dart';
 
@@ -33,17 +34,21 @@ class _CreateIntakePageState extends ConsumerState<CreateIntakePage> {
       final intake = WorkIntake(
         id: id,
         assetId: widget.assetId,
-        state: IntakeState.ingresado, //estado inicial
+        state: IntakeState.ingresado, // estado inicial
         reason: _reason.text.trim(),
         priority: _priority,
-        createdAt: DateTime.now(), // <-- NUEVO
+        createdAt: DateTime.now(),
       );
+
+      // usa el provider existente para crear y refrescar listas
       final create = ref.read(createIntakeProvider);
       await create(intake);
+
       if (!mounted) return;
-      // volver a FDU del asset
-      //context.go('/fdu/${widget.assetId}');
-      context.pop();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Ingreso creado')));
+      context.pop(); // volver a la FDU manteniendo el back
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -53,6 +58,12 @@ class _CreateIntakePageState extends ConsumerState<CreateIntakePage> {
       if (mounted) setState(() => _saving = false);
     }
   }
+
+  InputDecoration _dec(String label, {String? hint}) => InputDecoration(
+    labelText: label,
+    hintText: hint,
+    border: const OutlineInputBorder(),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -66,9 +77,9 @@ class _CreateIntakePageState extends ConsumerState<CreateIntakePage> {
             TextFormField(
               controller: _reason,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Motivo',
-                border: OutlineInputBorder(),
+              decoration: _dec(
+                'Motivo',
+                hint: 'Descripción breve del problema',
               ),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Requerido' : null,
