@@ -197,12 +197,26 @@ class FduPage extends ConsumerWidget {
                       _fmt(it.createdAt),
                       style: const TextStyle(fontSize: 12),
                     ),
+                    onTap: () =>
+                        context.push('/intake/detail/${it.id}/$assetId'),
                   );
                 },
               );
             },
             loading: () => const LinearProgressIndicator(),
             error: (e, _) => Text('Error historial: $e'),
+          ),
+
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () {
+              // Próximos módulos (diagnóstico, tareas, repuestos):
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Módulos en construcción')),
+              );
+            },
+            icon: const Icon(Icons.playlist_add_check),
+            label: const Text('Abrir módulos (Diagnóstico, Tareas, Repuestos)'),
           ),
         ],
       ),
