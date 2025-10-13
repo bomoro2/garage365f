@@ -16,6 +16,7 @@ class WorkIntake {
   final IntakeState state;
   final String reason;
   final String priority;
+  final DateTime createdAt;
 
   const WorkIntake({
     required this.id,
@@ -23,6 +24,7 @@ class WorkIntake {
     required this.state,
     required this.reason,
     required this.priority,
+    required this.createdAt,
   });
 
   factory WorkIntake.fromJson(Map<String, dynamic> j) => WorkIntake(
@@ -36,6 +38,7 @@ class WorkIntake {
     ),
     reason: j['reason'] ?? '',
     priority: j['priority'] ?? 'MEDIA',
+    createdAt: DateTime.tryParse(j['createdAt'] ?? '') ?? DateTime.now(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -44,5 +47,6 @@ class WorkIntake {
     'state': state.name,
     'reason': reason,
     'priority': priority,
+    'createdAt': createdAt.toIso8601String(),
   };
 }

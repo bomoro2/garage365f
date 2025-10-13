@@ -26,7 +26,6 @@ final router = GoRouter(
       builder: (ctx, st) =>
           CreateIntakePage(assetId: st.pathParameters['assetId']!),
     ),
-    // /qr/preview/:assetId → buscamos el asset para mostrar su code
     GoRoute(
       path: '/qr/preview/:assetId',
       builder: (ctx, st) {

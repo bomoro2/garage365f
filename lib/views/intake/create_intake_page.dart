@@ -33,15 +33,17 @@ class _CreateIntakePageState extends ConsumerState<CreateIntakePage> {
       final intake = WorkIntake(
         id: id,
         assetId: widget.assetId,
-        state: IntakeState.diagnostico, // estado inicial
+        state: IntakeState.ingresado, //estado inicial
         reason: _reason.text.trim(),
         priority: _priority,
+        createdAt: DateTime.now(), // <-- NUEVO
       );
       final create = ref.read(createIntakeProvider);
       await create(intake);
       if (!mounted) return;
       // volver a FDU del asset
-      context.go('/fdu/${widget.assetId}');
+      //context.go('/fdu/${widget.assetId}');
+      context.pop();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
