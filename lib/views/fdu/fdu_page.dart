@@ -39,13 +39,28 @@ class FduPage extends ConsumerWidget {
               icon: const Icon(Icons.qr_code_2),
               label: const Text('Ver QR del equipo'),
             ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => context.push('/intake/new/$assetId'),
+              icon: const Icon(Icons.add_task),
+              label: const Text('Nuevo ingreso'),
+            ),
 
             const SizedBox(height: 8),
             intakeAsync.when(
               data: (i) {
                 if (i == null) {
-                  return const Text(
-                    'Sin ingreso activo. (Crear ingreso luego)',
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Sin ingreso activo.'),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => context.push('/intake/new/$assetId'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Crear ingreso ahora'),
+                      ),
+                    ],
                   );
                 }
                 return Card(
@@ -57,9 +72,11 @@ class FduPage extends ConsumerWidget {
                   ),
                 );
               },
+              // loading/error igual que antes…
               loading: () => const LinearProgressIndicator(),
               error: (e, _) => Text('Error intake: $e'),
             ),
+
             const Spacer(),
             FilledButton.icon(
               onPressed: () {

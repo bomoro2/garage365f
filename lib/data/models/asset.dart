@@ -23,4 +23,12 @@ class Asset {
     model: j['model'],
     hourmeter: j['hourmeter'] ?? 0,
   );
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'code': code,
+    'type': type,
+    'brand': brand,
+    'model': model,
+    'hourmeter': hourmeter,
+  };
 }

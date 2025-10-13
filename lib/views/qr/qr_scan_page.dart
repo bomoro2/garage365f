@@ -25,7 +25,7 @@ class _QrScanPageState extends State<QrScanPage> {
     if (assetId != null && assetId.isNotEmpty) {
       setState(() => _handled = true);
       // Navega directo a la FDU (dummy)
-      context.go('/fdu/$assetId');
+      context.push('/fdu/$assetId');
     } else {
       ScaffoldMessenger.of(
         context,

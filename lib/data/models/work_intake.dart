@@ -15,7 +15,7 @@ class WorkIntake {
   final String assetId;
   final IntakeState state;
   final String reason;
-  final String priority; // "ALTA", "MEDIA", "BAJA"
+  final String priority;
 
   const WorkIntake({
     required this.id,
@@ -37,4 +37,12 @@ class WorkIntake {
     reason: j['reason'] ?? '',
     priority: j['priority'] ?? 'MEDIA',
   );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'assetId': assetId,
+    'state': state.name,
+    'reason': reason,
+    'priority': priority,
+  };
 }

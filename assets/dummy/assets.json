@@ -1,4 +1,5 @@
 [
-  {"id":"a1","code":"GRP07-001","type":"Generador","brand":"Cummins","model":"QSB6.7","hourmeter":4218},
-  {"id":"a2","code":"HT-012","type":"Torre","brand":"Atlas Copco","model":"QLT H50","hourmeter":983}
+  {"id":"a1","code":"GRP 07","type":"Grupo Electrogeno","brand":"Cummins","model":"QSB6.7","hourmeter":4218},
+  {"id":"a2","code":"IL 12","type":"Torre de Iluminacion","brand":"Kubota","model":"D 1105","hourmeter":983},
+  {"id":"a3","code":"AH 469 MP","type":"Volkswagen","brand":"Gol Trend","model":"2025","hourmeter":1500}
 ]
