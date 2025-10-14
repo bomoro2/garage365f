@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/task_provider.dart';
 import '../../state/task_log_provider.dart';
-import '../../data/models/task.dart';
 import '../../data/models/task_log.dart'; // 👈 necesario para TaskLogType
 
 class TaskDetailPage extends ConsumerWidget {

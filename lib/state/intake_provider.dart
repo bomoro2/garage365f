@@ -9,7 +9,7 @@ import 'intake_log_provider.dart';
 
 /// --- Repositorio principal ---
 final intakeRepoProvider = Provider<WorkIntakeRepository>(
-  (ref) => LocalWorkIntakeRepository(),
+  (ref) => PrefsWorkIntakeRepository(),
 );
 
 /// --- Lista completa de ingresos ---

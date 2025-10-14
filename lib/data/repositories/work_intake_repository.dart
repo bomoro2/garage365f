@@ -1,59 +1,59 @@
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/work_intake.dart';
+import 'prefs_store.dart';
 
 abstract class WorkIntakeRepository {
   Future<List<WorkIntake>> loadAll();
-  Future<void> add(WorkIntake intake);
+  Future<void> add(WorkIntake i);
   Future<void> updateState({
     required String intakeId,
     required IntakeState newState,
   });
 }
 
-class LocalWorkIntakeRepository implements WorkIntakeRepository {
-  static const _kUserIntakesKey = 'intakes_user';
+class PrefsWorkIntakeRepository implements WorkIntakeRepository {
+  static const _kKey = 'intakes_user';
   List<WorkIntake>? _cache;
 
-  @override
-  Future<List<WorkIntake>> loadAll() async {
-    if (_cache != null) return _cache!;
-    // base dummy
-    final baseStr = await rootBundle.loadString(
-      'assets/dummy/work_intakes.json',
-    );
-    final baseList = (json.decode(baseStr) as List)
-        .cast<Map<String, dynamic>>();
-    final base = baseList.map(WorkIntake.fromJson).toList();
-
-    // user persistidos
-    final prefs = await SharedPreferences.getInstance();
-    final userStr = prefs.getString(_kUserIntakesKey);
-    final user = <WorkIntake>[];
-    if (userStr != null && userStr.isNotEmpty) {
-      final arr = (json.decode(userStr) as List).cast<Map<String, dynamic>>();
-      user.addAll(arr.map(WorkIntake.fromJson));
+  Future<void> _ensureLoaded() async {
+    if (_cache != null) return;
+    final raw = await PrefsStore.readList(_kKey);
+    if (raw.isNotEmpty) {
+      _cache = raw.map(WorkIntake.fromJson).toList();
+      return;
     }
+    // si querés seed inicial:
+    try {
+      final seedStr = await rootBundle.loadString(
+        'assets/dummy/work_intakes.json',
+      );
+      final seed = (json.decode(seedStr) as List).cast<Map<String, dynamic>>();
+      _cache = seed.map(WorkIntake.fromJson).toList();
+    } catch (_) {
+      _cache = <WorkIntake>[];
+    }
+    await _save();
+  }
 
-    _cache = [...base, ...user];
-    return _cache!;
+  Future<void> _save() async {
+    await PrefsStore.writeList(
+      _kKey,
+      (_cache ?? []).map((e) => e.toJson()).toList(),
+    );
   }
 
   @override
-  Future<void> add(WorkIntake intake) async {
-    final prefs = await SharedPreferences.getInstance();
-    final all = await loadAll();
-    _cache = [...all, intake];
+  Future<List<WorkIntake>> loadAll() async {
+    await _ensureLoaded();
+    return _cache ?? <WorkIntake>[];
+  }
 
-    // persistimos solo overrides/user
-    final userStr = prefs.getString(_kUserIntakesKey);
-    final list = <Map<String, dynamic>>[];
-    if (userStr != null && userStr.isNotEmpty) {
-      list.addAll((json.decode(userStr) as List).cast<Map<String, dynamic>>());
-    }
-    list.add(intake.toJson());
-    await prefs.setString(_kUserIntakesKey, json.encode(list));
+  @override
+  Future<void> add(WorkIntake i) async {
+    await _ensureLoaded();
+    _cache = [...?_cache, i];
+    await _save();
   }
 
   @override
@@ -61,31 +61,11 @@ class LocalWorkIntakeRepository implements WorkIntakeRepository {
     required String intakeId,
     required IntakeState newState,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final all = await loadAll();
-
-    final idx = all.indexWhere((w) => w.id == intakeId);
-    if (idx == -1) return;
-    final updated = all[idx].copyWith(state: newState);
-    all[idx] = updated;
-    _cache = [...all];
-
-    final userStr = prefs.getString(_kUserIntakesKey);
-    final userList = <Map<String, dynamic>>[];
-
-    if (userStr != null && userStr.isNotEmpty) {
-      userList.addAll(
-        (json.decode(userStr) as List).cast<Map<String, dynamic>>(),
-      );
+    await _ensureLoaded();
+    final idx = _cache!.indexWhere((e) => e.id == intakeId);
+    if (idx != -1) {
+      _cache![idx] = _cache![idx].copyWith(state: newState);
+      await _save();
     }
-
-    final uIdx = userList.indexWhere((m) => m['id'] == intakeId);
-    if (uIdx >= 0) {
-      userList[uIdx] = updated.toJson();
-    } else {
-      userList.add(updated.toJson());
-    }
-
-    await prefs.setString(_kUserIntakesKey, json.encode(userList));
   }
 }

@@ -39,7 +39,7 @@ class QrService {
 
   /// Soporta 3 variantes:
   /// 1) g365://asset?id=a1&v=1&sig=XXXX
-  /// 2) https://g365.app/a/<id>?...
+  /// 2) https://g365.app/a/`<>`?...
   /// 3) solo 'a1' (dummy)
   static String? extractAssetId(String data) {
     final uri = tryParse(data);

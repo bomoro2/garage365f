@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../state/asset_list_provider.dart';
 import '../../state/intake_provider.dart';
 import '../../data/models/work_intake.dart';
+import '../../state/task_provider.dart'; // para leer tareas del ingreso
+import '../../data/models/task.dart'; // para TaskStatus
 
 class FduPage extends ConsumerWidget {
   final String assetId;
@@ -148,6 +150,66 @@ class _OpenIntakeCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tasksAsync = ref.watch(taskListByIntakeProvider(intake.id));
+
+    // orden de estados
+    const order = [
+      IntakeState.ingresado,
+      IntakeState.diagnostico,
+      IntakeState.aprobacion,
+      IntakeState.enProceso,
+      IntakeState.esperaRepuestos,
+      IntakeState.pruebas,
+      IntakeState.listo,
+      IntakeState.entregado,
+      IntakeState.cerrado,
+    ];
+
+    IntakeState? nextOf(IntakeState current) {
+      final i = order.indexOf(current);
+      if (i == -1 || i == order.length - 1) return null;
+      return order[i + 1];
+    }
+
+    Future<void> advance() async {
+      final next = nextOf(intake.state);
+      if (next == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ya está en el último estado.')),
+          );
+        }
+        return;
+      }
+
+      // si vamos a cerrar, validamos tareas (todas Done)
+      if (next == IntakeState.cerrado) {
+        final tasks = await ref.read(
+          taskListByIntakeProvider(intake.id).future,
+        );
+        final hasPending = tasks.any((t) => t.status != TaskStatus.done);
+        if (hasPending) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No se puede cerrar: hay tareas pendientes.'),
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      final update = ref.read(updateIntakeStateProvider);
+      await update(intakeId: intake.id, assetId: assetId, newState: next);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Estado → ${_stateLabel(next)}')),
+        );
+      }
+    }
+
     return Column(
       children: [
         Card(
@@ -170,14 +232,37 @@ class _OpenIntakeCard extends ConsumerWidget {
                           ),
                           DropdownButton<IntakeState>(
                             value: intake.state,
-                            items: IntakeState.values.map((s) {
-                              return DropdownMenuItem(
-                                value: s,
-                                child: Text(_stateLabel(s)),
-                              );
-                            }).toList(),
+                            items: order
+                                .map(
+                                  (s) => DropdownMenuItem(
+                                    value: s,
+                                    child: Text(_stateLabel(s)),
+                                  ),
+                                )
+                                .toList(),
                             onChanged: (newS) async {
                               if (newS == null) return;
+                              // Si seleccionan "CERRADO" por dropdown, validá tareas
+                              if (newS == IntakeState.cerrado) {
+                                final tasks = await ref.read(
+                                  taskListByIntakeProvider(intake.id).future,
+                                );
+                                final hasPending = tasks.any(
+                                  (t) => t.status != TaskStatus.done,
+                                );
+                                if (hasPending) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'No se puede cerrar: hay tareas pendientes.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                              }
                               final update = ref.read(
                                 updateIntakeStateProvider,
                               );
@@ -237,6 +322,20 @@ class _OpenIntakeCard extends ConsumerWidget {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        // 🔥 Botón "Siguiente estado"
+        Align(
+          alignment: Alignment.centerRight,
+          child: tasksAsync.when(
+            data: (_) => FilledButton.tonalIcon(
+              onPressed: advance,
+              icon: const Icon(Icons.fast_forward),
+              label: const Text('Siguiente estado'),
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ),
         const SizedBox(height: 12),
       ],
     );
@@ -245,9 +344,9 @@ class _OpenIntakeCard extends ConsumerWidget {
 
 // --- helpers ---
 String _fmt(DateTime dt) =>
-    '${_2(dt.day)}/${_2(dt.month)} ${_2(dt.hour)}:${_2(dt.minute)}';
+    '${_pad2(dt.day)}/${_pad2(dt.month)} ${_pad2(dt.hour)}:${_pad2(dt.minute)}';
 
-String _2(int v) => v.toString().padLeft(2, '0');
+String _pad2(int v) => v.toString().padLeft(2, '0');
 
 String _stateLabel(IntakeState s) {
   switch (s) {

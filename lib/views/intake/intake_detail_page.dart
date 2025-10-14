@@ -4,12 +4,13 @@ import 'package:uuid/uuid.dart';
 
 import '../../state/intake_provider.dart';
 import '../../state/intake_log_provider.dart';
-import '../../data/models/intake_log.dart';
 import '../../data/models/work_intake.dart';
+import '../../data/models/intake_log.dart';
 
 class IntakeDetailPage extends ConsumerWidget {
   final String intakeId;
-  final String assetId; // para refrescos si hiciera falta
+  final String assetId; // se usa para refrescos/navegación si hace falta
+
   const IntakeDetailPage({
     super.key,
     required this.intakeId,
@@ -30,19 +31,7 @@ class IntakeDetailPage extends ConsumerWidget {
           intakesAsync.when(
             data: (list) {
               final intake = list.firstWhere((e) => e.id == intakeId);
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.assignment_outlined),
-                  title: Text('Estado: ${_stateLabel(intake.state)}'),
-                  subtitle: Text(
-                    'Motivo: ${intake.reason}\nPrioridad: ${intake.priority}',
-                  ),
-                  trailing: Text(
-                    _fmt(intake.createdAt),
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                ),
-              );
+              return _IntakeHeader(intake: intake);
             },
             loading: () => const LinearProgressIndicator(),
             error: (e, _) => Text('Error ingreso: $e'),
@@ -52,7 +41,7 @@ class IntakeDetailPage extends ConsumerWidget {
           const Text('Timeline', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
 
-          // Timeline
+          // Timeline de logs del ingreso
           logsAsync.when(
             data: (items) {
               if (items.isEmpty) {
@@ -92,23 +81,45 @@ class IntakeDetailPage extends ConsumerWidget {
           ),
 
           const SizedBox(height: 12),
-          _AddNoteBar(intakeId: intakeId),
+          _AddIntakeNoteBar(intakeId: intakeId),
         ],
       ),
     );
   }
 }
 
-// barra para agregar notas rápidas al log
-class _AddNoteBar extends ConsumerStatefulWidget {
-  final String intakeId;
-  const _AddNoteBar({required this.intakeId});
+class _IntakeHeader extends StatelessWidget {
+  final WorkIntake intake;
+  const _IntakeHeader({required this.intake});
 
   @override
-  ConsumerState<_AddNoteBar> createState() => _AddNoteBarState();
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.assignment_outlined),
+        title: Text('Estado: ${_stateLabel(intake.state)}'),
+        subtitle: Text(
+          'Motivo: ${intake.reason}\nPrioridad: ${intake.priority}',
+        ),
+        trailing: Text(
+          _fmt(intake.createdAt),
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+      ),
+    );
+  }
 }
 
-class _AddNoteBarState extends ConsumerState<_AddNoteBar> {
+/// Barra para agregar notas al log del ingreso
+class _AddIntakeNoteBar extends ConsumerStatefulWidget {
+  final String intakeId;
+  const _AddIntakeNoteBar({required this.intakeId});
+
+  @override
+  ConsumerState<_AddIntakeNoteBar> createState() => _AddIntakeNoteBarState();
+}
+
+class _AddIntakeNoteBarState extends ConsumerState<_AddIntakeNoteBar> {
   final _c = TextEditingController();
   bool _posting = false;
 
@@ -177,8 +188,8 @@ class _AddNoteBarState extends ConsumerState<_AddNoteBar> {
 
 // helpers
 String _fmt(DateTime dt) =>
-    '${_2(dt.day)}/${_2(dt.month)} ${_2(dt.hour)}:${_2(dt.minute)}';
-String _2(int v) => v.toString().padLeft(2, '0');
+    '${_pad2(dt.day)}/${_pad2(dt.month)} ${_pad2(dt.hour)}:${_pad2(dt.minute)}';
+String _pad2(int v) => v.toString().padLeft(2, '0');
 
 String _stateLabel(IntakeState s) {
   switch (s) {

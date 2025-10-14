@@ -4,7 +4,7 @@ import '../data/repositories/asset_repository.dart';
 
 // Repo
 final assetRepoProvider = Provider<AssetRepository>(
-  (ref) => LocalAssetRepository(),
+  (ref) => PrefsAssetRepository(),
 );
 
 // Lista de equipos
