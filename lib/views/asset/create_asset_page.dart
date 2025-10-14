@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../state/asset_list_provider.dart';
 import '../../data/models/asset.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/navigation/safe_back.dart';
 
 class CreateAssetPage extends ConsumerStatefulWidget {
   const CreateAssetPage({super.key});
@@ -50,7 +51,7 @@ class _CreateAssetPageState extends ConsumerState<CreateAssetPage> {
 
       if (!mounted) return;
       // Ir directo a ver su QR (o a la FDU si querés)
-      context.go('/qr/preview/$id');
+      context.push('/qr/preview/$id');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(

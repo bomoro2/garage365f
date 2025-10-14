@@ -17,4 +17,9 @@ class PrefsStore {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, json.encode(data));
   }
+
+  static Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
 }

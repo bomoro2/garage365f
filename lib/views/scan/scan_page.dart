@@ -14,6 +14,10 @@ class ScanPage extends ConsumerWidget {
         title: const Text('Garage365 · Equipos'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => context.push('/settings'),
+          ),
+          IconButton(
             tooltip: 'Nuevo equipo',
             onPressed: () => context.push('/assets/new'),
             icon: const Icon(Icons.add_box_outlined),

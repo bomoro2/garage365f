@@ -7,10 +7,11 @@ import 'views/qr/qr_scan_page.dart';
 import 'views/qr/qr_preview_page.dart';
 import 'views/asset/create_asset_page.dart';
 import 'views/intake/create_intake_page.dart';
-import 'views/intake/intake_detail_page.dart'; // <- NUEVO
+import 'views/intake/intake_detail_page.dart';
 import 'state/asset_list_provider.dart';
 import 'views/task/task_list_page.dart';
 import 'views/task/task_detail_page.dart';
+import 'views/settings/settings_page.dart';
 
 final router = GoRouter(
   routes: [
@@ -51,6 +52,7 @@ final router = GoRouter(
         intakeId: st.pathParameters['intakeId']!,
       ),
     ),
+    GoRoute(path: '/settings', builder: (ctx, st) => const SettingsPage()),
   ],
 );
 
