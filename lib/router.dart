@@ -56,7 +56,7 @@ final router = GoRouter(
 
 class _QrPreviewResolver extends ConsumerWidget {
   final String assetId;
-  const _QrPreviewResolver({required this.assetId, super.key});
+  const _QrPreviewResolver({required this.assetId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
