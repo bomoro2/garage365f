@@ -18,6 +18,34 @@ final intakeListProvider = FutureProvider<List<WorkIntake>>((ref) async {
   return repo.loadAll();
 });
 
+/// --- Ingresos ABIERTOS por asset (no cerrados), orden desc por fecha ---
+final openIntakesByAssetProvider =
+    FutureProvider.family<List<WorkIntake>, String>((ref, assetId) async {
+      final list = await ref.watch(intakeListProvider.future);
+      final open =
+          list
+              .where(
+                (i) => i.assetId == assetId && i.state != IntakeState.cerrado,
+              )
+              .toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return open;
+    });
+
+/// --- Historial por asset: SOLO CERRADOS (orden desc por fecha) ---
+final intakeHistoryByAssetProvider =
+    FutureProvider.family<List<WorkIntake>, String>((ref, assetId) async {
+      final list = await ref.watch(intakeListProvider.future);
+      final closed =
+          list
+              .where(
+                (i) => i.assetId == assetId && i.state == IntakeState.cerrado,
+              )
+              .toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return closed;
+    });
+
 /// --- Crear nuevo ingreso (y log 'created') ---
 final createIntakeProvider = Provider<Future<void> Function(WorkIntake)>((ref) {
   return (WorkIntake intake) async {
@@ -38,33 +66,10 @@ final createIntakeProvider = Provider<Future<void> Function(WorkIntake)>((ref) {
 
     // refrescos
     ref.invalidate(intakeListProvider);
-    ref.invalidate(activeIntakeByAssetProvider(intake.assetId));
+    ref.invalidate(openIntakesByAssetProvider(intake.assetId));
     ref.invalidate(intakeHistoryByAssetProvider(intake.assetId));
   };
 });
-
-/// --- Último ingreso ACTIVO (no cerrado) ---
-final activeIntakeByAssetProvider = FutureProvider.family<WorkIntake?, String>((
-  ref,
-  assetId,
-) async {
-  final list = await ref.watch(intakeListProvider.future);
-  final filtered =
-      list
-          .where((i) => i.assetId == assetId && i.state != IntakeState.cerrado)
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-  return filtered.isEmpty ? null : filtered.first;
-});
-
-/// --- Historial de ingresos (todos, incluso cerrados) ---
-final intakeHistoryByAssetProvider =
-    FutureProvider.family<List<WorkIntake>, String>((ref, assetId) async {
-      final list = await ref.watch(intakeListProvider.future);
-      final filtered = list.where((i) => i.assetId == assetId).toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return filtered;
-    });
 
 /// --- Actualizar estado de un ingreso (y log 'stateChanged') ---
 final updateIntakeStateProvider =
@@ -82,7 +87,7 @@ final updateIntakeStateProvider =
       }) async {
         final repo = ref.read(intakeRepoProvider);
 
-        // necesitamos el estado anterior para el log
+        // estado anterior para el log
         final all = await ref.read(intakeListProvider.future);
         final before = all.firstWhere((e) => e.id == intakeId);
 
@@ -104,7 +109,7 @@ final updateIntakeStateProvider =
 
         // refrescar providers relacionados
         ref.invalidate(intakeListProvider);
-        ref.invalidate(activeIntakeByAssetProvider(assetId));
+        ref.invalidate(openIntakesByAssetProvider(assetId));
         ref.invalidate(intakeHistoryByAssetProvider(assetId));
       };
     });

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart'; // 👈 necesario para context.push
 import 'package:uuid/uuid.dart';
+
 import '../../state/task_provider.dart';
 import '../../data/models/task.dart';
 
@@ -35,13 +37,16 @@ class TaskListPage extends ConsumerWidget {
                 ),
                 trailing: PopupMenuButton<TaskStatus>(
                   onSelected: (s) async {
+                    final before = t;
                     final updated = t.copyWith(status: s);
-                    await ref.read(updateTaskProvider)(updated);
+                    await ref.read(updateTaskProvider)(updated, before: before);
                   },
                   itemBuilder: (_) => TaskStatus.values
                       .map((s) => PopupMenuItem(value: s, child: Text(s.name)))
                       .toList(),
                 ),
+                // 👇 abre el detalle con timeline
+                onTap: () => context.push('/task/detail/${t.id}/${t.intakeId}'),
               );
             },
           );
@@ -97,6 +102,8 @@ class TaskListPage extends ConsumerWidget {
                 createdAt: DateTime.now(),
               );
               await ref.read(createTaskProvider)(newTask);
+              // 👇 evitar "use_build_context_synchronously"
+              if (!context.mounted) return;
               Navigator.pop(context);
             },
             child: const Text('Guardar'),

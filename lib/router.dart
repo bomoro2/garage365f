@@ -10,6 +10,7 @@ import 'views/intake/create_intake_page.dart';
 import 'views/intake/intake_detail_page.dart'; // <- NUEVO
 import 'state/asset_list_provider.dart';
 import 'views/task/task_list_page.dart';
+import 'views/task/task_detail_page.dart';
 
 final router = GoRouter(
   routes: [
@@ -42,6 +43,13 @@ final router = GoRouter(
       path: '/intake/:intakeId/tasks',
       builder: (ctx, st) =>
           TaskListPage(intakeId: st.pathParameters['intakeId']!),
+    ),
+    GoRoute(
+      path: '/task/detail/:taskId/:intakeId',
+      builder: (ctx, st) => TaskDetailPage(
+        taskId: st.pathParameters['taskId']!,
+        intakeId: st.pathParameters['intakeId']!,
+      ),
     ),
   ],
 );
