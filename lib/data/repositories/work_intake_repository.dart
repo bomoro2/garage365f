@@ -6,6 +6,10 @@ import '../models/work_intake.dart';
 abstract class WorkIntakeRepository {
   Future<List<WorkIntake>> loadAll();
   Future<void> add(WorkIntake intake);
+  Future<void> updateState({
+    required String intakeId,
+    required IntakeState newState,
+  });
 }
 
 class LocalWorkIntakeRepository implements WorkIntakeRepository {
@@ -42,7 +46,7 @@ class LocalWorkIntakeRepository implements WorkIntakeRepository {
     final all = await loadAll();
     _cache = [...all, intake];
 
-    // guardamos SOLO los user (no mezclamos con base)
+    // persistimos solo overrides/user
     final userStr = prefs.getString(_kUserIntakesKey);
     final list = <Map<String, dynamic>>[];
     if (userStr != null && userStr.isNotEmpty) {
@@ -50,5 +54,38 @@ class LocalWorkIntakeRepository implements WorkIntakeRepository {
     }
     list.add(intake.toJson());
     await prefs.setString(_kUserIntakesKey, json.encode(list));
+  }
+
+  @override
+  Future<void> updateState({
+    required String intakeId,
+    required IntakeState newState,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final all = await loadAll();
+
+    final idx = all.indexWhere((w) => w.id == intakeId);
+    if (idx == -1) return;
+    final updated = all[idx].copyWith(state: newState);
+    all[idx] = updated;
+    _cache = [...all];
+
+    final userStr = prefs.getString(_kUserIntakesKey);
+    final userList = <Map<String, dynamic>>[];
+
+    if (userStr != null && userStr.isNotEmpty) {
+      userList.addAll(
+        (json.decode(userStr) as List).cast<Map<String, dynamic>>(),
+      );
+    }
+
+    final uIdx = userList.indexWhere((m) => m['id'] == intakeId);
+    if (uIdx >= 0) {
+      userList[uIdx] = updated.toJson();
+    } else {
+      userList.add(updated.toJson());
+    }
+
+    await prefs.setString(_kUserIntakesKey, json.encode(userList));
   }
 }
