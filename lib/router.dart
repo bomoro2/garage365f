@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'views/scan/scan_page.dart';
 import 'views/fdu/fdu_page.dart';
 import 'views/qr/qr_scan_page.dart';
@@ -10,6 +9,7 @@ import 'views/asset/create_asset_page.dart';
 import 'views/intake/create_intake_page.dart';
 import 'views/intake/intake_detail_page.dart'; // <- NUEVO
 import 'state/asset_list_provider.dart';
+import 'views/task/task_list_page.dart';
 
 final router = GoRouter(
   routes: [
@@ -37,6 +37,11 @@ final router = GoRouter(
         intakeId: st.pathParameters['intakeId']!,
         assetId: st.pathParameters['assetId']!,
       ),
+    ),
+    GoRoute(
+      path: '/intake/:intakeId/tasks',
+      builder: (ctx, st) =>
+          TaskListPage(intakeId: st.pathParameters['intakeId']!),
     ),
   ],
 );

@@ -82,79 +82,92 @@ class FduPage extends ConsumerWidget {
                   ],
                 );
               }
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.assignment_turned_in_outlined),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.assignment_turned_in_outlined),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Estado: ',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Estado: ',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    DropdownButton<IntakeState>(
+                                      value: i.state,
+                                      items: IntakeState.values.map((s) {
+                                        return DropdownMenuItem(
+                                          value: s,
+                                          child: Text(_stateLabel(s)),
+                                        );
+                                      }).toList(),
+                                      onChanged: (newS) async {
+                                        if (newS == null) return;
+                                        final update = ref.read(
+                                          updateIntakeStateProvider,
+                                        );
+                                        await update(
+                                          intakeId: i.id,
+                                          assetId: assetId,
+                                          newState: newS,
+                                        );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Estado actualizado a ${_stateLabel(newS)}',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ],
                                 ),
-                                DropdownButton<IntakeState>(
-                                  value: i.state,
-                                  items: IntakeState.values.map((s) {
-                                    return DropdownMenuItem(
-                                      value: s,
-                                      child: Text(_stateLabel(s)),
-                                    );
-                                  }).toList(),
-                                  onChanged: (newS) async {
-                                    if (newS == null) return;
-                                    final update = ref.read(
-                                      updateIntakeStateProvider,
-                                    );
-                                    await update(
-                                      intakeId: i.id,
-                                      assetId: assetId,
-                                      newState: newS,
-                                    );
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Estado actualizado a ${_stateLabel(newS)}',
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Motivo: ${i.reason}\nPrioridad: ${i.priority}',
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Motivo: ${i.reason}\nPrioridad: ${i.priority}',
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _fmt(i.createdAt),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
                             ),
-                          ],
-                        ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _fmt(i.createdAt),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: () => context.push('/intake/${i.id}/tasks'),
+                    icon: const Icon(Icons.list_alt_outlined),
+                    label: const Text('Ver tareas del ingreso'),
+                  ),
+                ],
               );
             },
             loading: () => const LinearProgressIndicator(),
