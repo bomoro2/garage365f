@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import '../../state/asset_list_provider.dart';
 import '../../data/models/asset.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/navigation/safe_back.dart';
 
 class CreateAssetPage extends ConsumerStatefulWidget {
   const CreateAssetPage({super.key});

@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.garage365"
-        minSdk = 23            // <-- clave para CameraX / mobile_scanner
+        minSdk = flutter.minSdkVersion            // <-- clave para CameraX / mobile_scanner
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
