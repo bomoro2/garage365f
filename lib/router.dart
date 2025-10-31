@@ -12,6 +12,7 @@ import 'state/asset_list_provider.dart';
 import 'views/task/task_list_page.dart';
 import 'views/task/task_detail_page.dart';
 import 'views/settings/settings_page.dart';
+import '/views/sensors/sensor_scope_page.dart';
 
 final router = GoRouter(
   routes: [
@@ -53,6 +54,10 @@ final router = GoRouter(
       ),
     ),
     GoRoute(path: '/settings', builder: (ctx, st) => const SettingsPage()),
+    GoRoute(
+      path: '/sensor-scope',
+      builder: (ctx, st) => const SensorScopePage(),
+    ),
   ],
 );
 
