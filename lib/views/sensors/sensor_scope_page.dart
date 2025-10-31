@@ -1,8 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/sensors_controller.dart';
-import 'dart:math' as math;               // 👈 agregar esto arriba
-
 
 class SensorScopePage extends ConsumerWidget {
   const SensorScopePage({super.key});
@@ -25,25 +25,63 @@ class SensorScopePage extends ConsumerWidget {
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _Section(
+            // 🔹 Nivel actual (RMS)
+            Consumer(
+              builder: (context, ref, _) {
+                final s = ref.watch(sensorsControllerProvider);
+                final rms =
+                    (s.spectrum.isNotEmpty ? s.spectrum.first : 0.0);
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.blueGrey.shade900,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Nivel actual: ${rms.toStringAsFixed(3)} g',
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 16),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // 🔹 Waveform (por ahora vacío)
+            const _Section(
               title: 'Waveform (audio)',
               child: SizedBox(
                 height: 120,
-                child: CustomPaint(
-                  painter: _WaveformPainter(state.waveform),
+                child: Center(
+                  child: Text(
+                    'Audio no disponible en esta build',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            _Section(
-              title: 'Acelerómetro (magnitud | g)',
-              child: SizedBox(
-                height: 120,
-                child: CustomPaint(
-                  painter: _LineSeriesPainter(state.accelMagnitude, yLabel: 'g'),
-                ),
-              ),
+
+            // 🔹 Acelerómetro
+            Consumer(
+              builder: (context, ref, _) {
+                final s = ref.watch(sensorsControllerProvider);
+                return _Section(
+                  title: 'Acelerómetro (magnitud | g)',
+                  child: SizedBox(
+                    height: 120,
+                    child: CustomPaint(
+                      painter: _LineSeriesPainter(
+                        s.accelMagnitude,
+                        yLabel: 'g',
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -64,14 +102,23 @@ class _Section extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 6),
-          ClipRRect(borderRadius: BorderRadius.circular(8), child: child),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: child,
+          ),
         ],
       ),
     );
@@ -104,17 +151,16 @@ class _WaveformPainter extends CustomPainter {
 
     if (samples.isEmpty) return;
 
-    // cuántas muestras salto por pixel
     final totalPoints = samples.length;
     final pixels = size.width;
-    final step =
-        math.max(1, (totalPoints / pixels).floor()); // 👈 ahora es int seguro
+    final step = math.max(1, (totalPoints / pixels).floor());
 
     final path = Path();
     int j = 0;
     for (int i = 0; i < totalPoints; i += step) {
-      final x =
-          j * (size.width / ((totalPoints / step) - 1).clamp(1, 1e9).toDouble());
+      final x = j *
+          (size.width /
+              ((totalPoints / step) - 1).clamp(1, 1e9).toDouble());
       final y = midY - samples[i] * (size.height * 0.45);
       if (j == 0) {
         path.moveTo(x, y);
@@ -141,6 +187,7 @@ class _LineSeriesPainter extends CustomPainter {
     final bg = Paint()..color = Colors.black;
     canvas.drawRect(Offset.zero & size, bg);
 
+    // grid
     final gridPaint = Paint()
       ..color = Colors.white12
       ..strokeWidth = 1;
@@ -160,8 +207,10 @@ class _LineSeriesPainter extends CustomPainter {
 
     final path = Path();
     for (int i = 0; i < values.length; i++) {
-      final x = i * (size.width / (values.length - 1).clamp(1, 1e9));
-      final y = size.height - ((values[i] - minV) / span) * size.height;
+      final x =
+          i * (size.width / (values.length - 1).clamp(1, 1e9).toDouble());
+      final y = size.height -
+          ((values[i] - minV) / span) * size.height; // normalizado
       if (i == 0) {
         path.moveTo(x, y);
       } else {
@@ -176,8 +225,12 @@ class _LineSeriesPainter extends CustomPainter {
 
     canvas.drawPath(path, line);
 
+    // label
     final tp = TextPainter(
-      text: TextSpan(text: yLabel, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+      text: TextSpan(
+        text: yLabel,
+        style: const TextStyle(color: Colors.white54, fontSize: 10),
+      ),
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: size.width);
     tp.paint(canvas, const Offset(4, 4));
