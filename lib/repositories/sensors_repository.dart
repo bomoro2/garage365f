@@ -1,36 +1,24 @@
+// lib/repositories/sensors_repository.dart
 import 'dart:typed_data';
-// import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
-// import 'package:mic_stream/mic_stream.dart';
 
 class SensorsRepository {
-  Stream<Uint8List>? micStream;
+  // accel
   Stream<AccelerometerEvent>? accelStream;
 
-  final int sampleRate;
-  // final ChannelConfig channelConfig;
-  // final AudioFormat audioFormat;
-
-  SensorsRepository({
-    this.sampleRate = 44100,
-    // this.channelConfig = ChannelConfig.CHANNEL_IN_MONO,
-    // this.audioFormat = AudioFormat.ENCODING_PCM_16BIT,
-  });
+  // audio
+  EventChannel? _audioChannel;
+  Stream<Uint8List>? micStream;
 
   Future<void> init() async {
-  //   // ⚠️ en web NO intentamos abrir mic_stream
-  //   if (!kIsWeb) {
-  //     micStream = await MicStream.microphone(
-  //       sampleRate: sampleRate,
-  //       audioSource: AudioSource.MIC,
-  //       channelConfig: channelConfig,
-  //       audioFormat: audioFormat,
-  //     );
-  //   } else {
-  //     micStream = null;
-  //   }
-
-    // esto sí es seguro
+    // 👇 SOLO acel acá
     accelStream = accelerometerEventStream();
+  }
+
+  Future<void> initMic() async {
+    // 👇 recién acá tocamos el canal nativo
+    _audioChannel ??= const EventChannel('garage365/audio');
+    micStream = _audioChannel!.receiveBroadcastStream().cast<Uint8List>();
   }
 }

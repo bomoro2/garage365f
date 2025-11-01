@@ -1,23 +1,46 @@
-import 'dart:math' as math;
-
+// lib/views/sensors/sensor_scope_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../controllers/sensors_controller.dart';
 
-class SensorScopePage extends ConsumerWidget {
+class SensorScopePage extends ConsumerStatefulWidget {
   const SensorScopePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SensorScopePage> createState() => _SensorScopePageState();
+}
+
+class _SensorScopePageState extends ConsumerState<SensorScopePage> {
+  @override
+  void initState() {
+    super.initState();
+    // arrancamos el accel
+    Future.microtask(() {
+      ref.read(sensorsControllerProvider.notifier).start();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(sensorsControllerProvider);
     final vm = ref.read(sensorsControllerProvider.notifier);
 
+    final accelRms = state.spectrum.isNotEmpty ? state.spectrum[0] : 0.0;
+    final audioRms = state.spectrum.length > 1 ? state.spectrum[1] : 0.0;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SensorScope (Audio + Acelerómetro)'),
+        title: const Text('SensorScope'),
         actions: [
           IconButton(
-            icon: Icon(state.isRecording ? Icons.stop : Icons.mic),
+            icon: const Icon(Icons.mic),
+            onPressed: () {
+              vm.startMic();
+            },
+          ),
+          IconButton(
+            icon: Icon(state.isRecording ? Icons.stop : Icons.play_arrow),
             onPressed: state.isRecording ? vm.stop : vm.start,
           ),
         ],
@@ -27,61 +50,56 @@ class SensorScopePage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 🔹 Nivel actual (RMS)
-            Consumer(
-              builder: (context, ref, _) {
-                final s = ref.watch(sensorsControllerProvider);
-                final rms =
-                    (s.spectrum.isNotEmpty ? s.spectrum.first : 0.0);
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.blueGrey.shade900,
-                    borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                Expanded(
+                  child: _MetricCard(
+                    title: 'Vibración (g)',
+                    value: accelRms.toStringAsFixed(3),
+                    color: Colors.green,
                   ),
-                  child: Text(
-                    'Nivel actual: ${rms.toStringAsFixed(3)} g',
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 16),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _MetricCard(
+                    title: 'Audio (RMS)',
+                    value: audioRms.toStringAsFixed(3),
+                    color: Colors.purpleAccent,
                   ),
-                );
-              },
+                ),
+              ],
             ),
             const SizedBox(height: 12),
-
-            // 🔹 Waveform (por ahora vacío)
-            const _Section(
-              title: 'Waveform (audio)',
-              child: SizedBox(
-                height: 120,
-                child: Center(
-                  child: Text(
-                    'Audio no disponible en esta build',
-                    style: TextStyle(fontSize: 12),
-                  ),
+            // gráfico verde
+            Expanded(
+              flex: 2,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: CustomPaint(
+                  painter: _AccelPainter(state.accelMagnitude),
+                  child: const SizedBox.expand(),
                 ),
               ),
             ),
             const SizedBox(height: 12),
-
-            // 🔹 Acelerómetro
-            Consumer(
-              builder: (context, ref, _) {
-                final s = ref.watch(sensorsControllerProvider);
-                return _Section(
-                  title: 'Acelerómetro (magnitud | g)',
-                  child: SizedBox(
-                    height: 120,
-                    child: CustomPaint(
-                      painter: _LineSeriesPainter(
-                        s.accelMagnitude,
-                        yLabel: 'g',
-                      ),
-                    ),
-                  ),
-                );
-              },
+            // gráfico violeta
+            Expanded(
+              flex: 1,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: CustomPaint(
+                  painter: _AudioWaveformPainter(state.waveform),
+                  child: const SizedBox.expand(),
+                ),
+              ),
             ),
           ],
         ),
@@ -90,34 +108,40 @@ class SensorScopePage extends ConsumerWidget {
   }
 }
 
-class _Section extends StatelessWidget {
+class _MetricCard extends StatelessWidget {
   final String title;
-  final Widget child;
-  const _Section({required this.title, required this.child});
+  final String value;
+  final Color color;
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          )
-        ],
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: child,
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: Colors.white70),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -125,78 +149,28 @@ class _Section extends StatelessWidget {
   }
 }
 
-/// ---------- Painters ----------
+/// ---------- painters ----------
 
-class _WaveformPainter extends CustomPainter {
-  final List<double> samples; // [-1,1]
-  _WaveformPainter(this.samples);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bg = Paint()..color = Colors.black;
-    canvas.drawRect(Offset.zero & size, bg);
-
-    final midY = size.height / 2;
-    final line = Paint()
-      ..color = Colors.white70
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    // línea media
-    canvas.drawLine(
-      Offset(0, midY),
-      Offset(size.width, midY),
-      Paint()..color = Colors.white24,
-    );
-
-    if (samples.isEmpty) return;
-
-    final totalPoints = samples.length;
-    final pixels = size.width;
-    final step = math.max(1, (totalPoints / pixels).floor());
-
-    final path = Path();
-    int j = 0;
-    for (int i = 0; i < totalPoints; i += step) {
-      final x = j *
-          (size.width /
-              ((totalPoints / step) - 1).clamp(1, 1e9).toDouble());
-      final y = midY - samples[i] * (size.height * 0.45);
-      if (j == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-      j++;
-    }
-
-    canvas.drawPath(path, line);
-  }
-
-  @override
-  bool shouldRepaint(covariant _WaveformPainter oldDelegate) => true;
-}
-
-class _LineSeriesPainter extends CustomPainter {
+class _AccelPainter extends CustomPainter {
   final List<double> values;
-  final String yLabel;
-  _LineSeriesPainter(this.values, {this.yLabel = ''});
+  _AccelPainter(this.values);
 
   @override
   void paint(Canvas canvas, Size size) {
     final bg = Paint()..color = Colors.black;
     canvas.drawRect(Offset.zero & size, bg);
 
-    // grid
-    final gridPaint = Paint()
-      ..color = Colors.white12
-      ..strokeWidth = 1;
-    for (int i = 1; i < 4; i++) {
-      final y = size.height * (i / 4);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    if (values.isEmpty) {
+      final mid = size.height / 2;
+      canvas.drawLine(
+        Offset(0, mid),
+        Offset(size.width, mid),
+        Paint()
+          ..color = Colors.white24
+          ..strokeWidth = 1,
+      );
+      return;
     }
-
-    if (values.isEmpty) return;
 
     double minV = values.first, maxV = values.first;
     for (final v in values) {
@@ -206,11 +180,11 @@ class _LineSeriesPainter extends CustomPainter {
     final span = (maxV - minV).abs() < 1e-6 ? 1.0 : (maxV - minV);
 
     final path = Path();
+    final divider = (values.length - 1).clamp(1, 100000);
     for (int i = 0; i < values.length; i++) {
-      final x =
-          i * (size.width / (values.length - 1).clamp(1, 1e9).toDouble());
-      final y = size.height -
-          ((values[i] - minV) / span) * size.height; // normalizado
+      final x = i * (size.width / divider);
+      final norm = (values[i] - minV) / span;
+      final y = size.height - norm * size.height;
       if (i == 0) {
         path.moveTo(x, y);
       } else {
@@ -219,23 +193,64 @@ class _LineSeriesPainter extends CustomPainter {
     }
 
     final line = Paint()
-      ..style = PaintingStyle.stroke
+      ..color = Colors.greenAccent
       ..strokeWidth = 1.5
-      ..color = Colors.white70;
+      ..style = PaintingStyle.stroke;
 
     canvas.drawPath(path, line);
-
-    // label
-    final tp = TextPainter(
-      text: TextSpan(
-        text: yLabel,
-        style: const TextStyle(color: Colors.white54, fontSize: 10),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: size.width);
-    tp.paint(canvas, const Offset(4, 4));
   }
 
   @override
-  bool shouldRepaint(covariant _LineSeriesPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _AccelPainter oldDelegate) => true;
+}
+
+class _AudioWaveformPainter extends CustomPainter {
+  final List<double> samples;
+  _AudioWaveformPainter(this.samples);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bg = Paint()..color = Colors.black;
+    canvas.drawRect(Offset.zero & size, bg);
+
+    final midY = size.height / 2;
+    canvas.drawLine(
+      Offset(0, midY),
+      Offset(size.width, midY),
+      Paint()
+        ..color = Colors.white24
+        ..strokeWidth = 1,
+    );
+
+    if (samples.isEmpty) return;
+
+    final total = samples.length;
+    final step = (total / size.width).ceil().clamp(1, 999999);
+
+    final path = Path();
+    int drawIndex = 0;
+    for (int i = 0; i < total; i += step) {
+      final x =
+          drawIndex * (size.width / (total / step).clamp(1, 1e9).toDouble());
+      final s = samples[i].clamp(-1.0, 1.0);
+      final y = midY - s * (size.height * 0.45);
+
+      if (drawIndex == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+      drawIndex++;
+    }
+
+    final line = Paint()
+      ..color = Colors.purpleAccent
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawPath(path, line);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AudioWaveformPainter oldDelegate) => true;
 }
